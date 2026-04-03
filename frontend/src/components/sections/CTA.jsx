@@ -1,4 +1,5 @@
 import { CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function CTA() {
   return (
@@ -42,7 +43,7 @@ export default function CTA() {
               <li className="flex gap-3 text-sm"><CheckCircle2 size={18} className="text-accent" /> What-If Simulator</li>
               <li className="flex gap-3 text-sm"><CheckCircle2 size={18} className="text-accent" /> RBI Account Aggregator</li>
             </ul>
-            <button className="btn-primary w-full justify-center text-lg animate-glow-pulse">Start 14-Day Free Trial</button>
+            <Link to="/dashboard" className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '1.05rem', textDecoration: 'none' }}>Start 14-Day Free Trial</Link>
           </div>
 
           {/* B2B Tier */}

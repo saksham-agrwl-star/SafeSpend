@@ -48,7 +48,7 @@ export default function DemoFlow() {
             <div className="glass-card p-10 border-danger/30 relative overflow-hidden">
               <div className="absolute inset-0 bg-danger/5" />
               <ShieldAlert size={48} className="text-danger mb-6" />
-              <h3 className="text-3xl font-bold mb-4 text-white">Target Scenario</h3>
+              <h3 className="text-3xl font-bold mb-4 text-text">Target Scenario</h3>
               <p className="text-lg text-muted leading-relaxed mb-6">
                 You've set a ₹15,000 monthly budget and a Goa Trip goal. It's 11:45 PM. You're scrolling Swiggy for a ₹2,800 order.
               </p>
@@ -70,8 +70,8 @@ export default function DemoFlow() {
                 <h4 className="text-xl font-bold">The Intent</h4>
               </div>
               <p className="text-muted">User hits "Pay via UPI" on a ₹2,800 order from a premium burger joint at 11:45 PM.</p>
-              <div className="mt-4 p-4 border border-border bg-black rounded-lg flex items-center gap-3">
-                <CreditCard className="text-accent"/> <span className="font-mono text-sm shadow-md">SWIGGY*ORDER_90210 - ₹2,800</span>
+              <div className="mt-4 p-4 border border-border bg-surface2 rounded-lg flex items-center gap-3">
+                <CreditCard className="text-accent"/> <span className="font-mono text-sm shadow-md text-text">SWIGGY*ORDER_90210 - ₹2,800</span>
               </div>
             </div>
 

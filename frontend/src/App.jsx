@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 import useLenis from './hooks/useLenis';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 // Layout & UI
 import Navbar from './components/layout/Navbar';
@@ -9,7 +11,7 @@ import Footer from './components/layout/Footer';
 import FeatherOrb from './components/ui/FeatherOrb';
 import ParticleCanvas from './components/ui/ParticleCanvas';
 
-// Sections
+// Landing sections
 import Hero from './components/sections/Hero';
 import Problem from './components/sections/Problem';
 import Solution from './components/sections/Solution';
@@ -20,20 +22,28 @@ import HealthScore from './components/sections/HealthScore';
 import DemoFlow from './components/sections/DemoFlow';
 import CTA from './components/sections/CTA';
 
-export default function App() {
+// App Pages
+import DashboardPage from './pages/DashboardPage';
+import SimulatorPage from './pages/SimulatorPage';
+import InsightsPage from './pages/InsightsPage';
+import ChatPage from './pages/ChatPage';
+import GoalsPage from './pages/GoalsPage';
+
+gsap.registerPlugin(ScrollTrigger);
+
+function LandingPage() {
   useLenis();
   const appRef = useRef(null);
   const orbRef = useRef(null);
+  const { isDark } = useTheme();
 
   useEffect(() => {
     let ctx = gsap.context(() => {
-      // 1. Orb entrance animation (on load)
-      gsap.fromTo(orbRef.current, 
+      gsap.fromTo(orbRef.current,
         { y: 100, opacity: 0 },
         { y: 0, opacity: 1, duration: 2, ease: "power3.out", delay: 0.2 }
       );
 
-      // 2. The Main Scroll Timeline (Broadway Feather Effect)
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: "#hero",
@@ -43,19 +53,17 @@ export default function App() {
         }
       });
 
-      // Orb drifts to center and shrinks
       tl.to(orbRef.current, {
-        x: "-45vw", // Move left toward center
-        y: "-30vh", // Move up
+        x: "-45vw",
+        y: "-30vh",
         scale: 0.5,
-        rotation: -45, // Add rotation to symbol
+        rotation: -45,
         ease: "none",
         duration: 1
-      }, 0); // start at 0
+      }, 0);
 
-      // Text characters light up
       tl.to(".hero-word:not(.lit)", {
-        color: "#F0F0FF",
+        color: isDark ? "#F0F0FF" : "#1A1B2E",
         stagger: 0.1,
         ease: "none",
         duration: 0.5
@@ -69,7 +77,6 @@ export default function App() {
         duration: 0.3
       }, 0.2);
 
-      // Orb fades out when entering Problem section
       tl.to(orbRef.current, {
         opacity: 0,
         scale: 0,
@@ -80,17 +87,14 @@ export default function App() {
     }, appRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [isDark]);
 
   return (
-    <div ref={appRef} className="relative min-h-screen">
-      {/* Global Elements */}
+    <div ref={appRef} className={`relative min-h-screen ${!isDark ? 'light-theme' : ''}`}>
       <div className="noise-overlay" />
       <Navbar />
       <FeatherOrb ref={orbRef} />
       <ParticleCanvas orbRef={orbRef} />
-
-      {/* Pages / Sections */}
       <main>
         <Hero />
         <Problem />
@@ -102,8 +106,24 @@ export default function App() {
         <DemoFlow />
         <CTA />
       </main>
-
       <Footer />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/simulator" element={<SimulatorPage />} />
+          <Route path="/insights" element={<InsightsPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/goals" element={<GoalsPage />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

@@ -7,15 +7,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: "#020205",
-        surface: "#0d0d14",
-        border: "#1a1a2e",
-        accent: "#6C63FF",
-        accent2: "#00D4AA",
-        warn: "#F59E0B",
-        danger: "#EF4444",
-        text: "#F0F0FF",
-        muted: "#7070A0",
+        bg: "var(--color-bg)",
+        surface: "var(--color-surface)",
+        surface2: "var(--color-surface2, var(--color-surface))",
+        border: "var(--color-border)",
+        accent: "var(--color-accent)",
+        accent2: "var(--color-accent2)",
+        warn: "var(--color-warn)",
+        danger: "var(--color-danger)",
+        text: "var(--color-text)",
+        muted: "var(--color-muted)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],

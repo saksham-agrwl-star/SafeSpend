@@ -57,7 +57,7 @@ export default function HealthScore() {
               <circle cx="50%" cy="50%" r="45%" fill="none" stroke="rgba(108, 99, 255, 0.1)" strokeWidth="12" />
               <circle 
                 cx="50%" cy="50%" r="45%" fill="none" 
-                stroke="#6C63FF" strokeWidth="12" strokeLinecap="round" 
+                stroke="#8B5CF6" strokeWidth="12" strokeLinecap="round" 
                 strokeDasharray="283%" strokeDashoffset={283 - (283 * 0.78) + "%"} 
                 style={{ transition: 'stroke-dashoffset 2s ease-out' }}
               />

@@ -71,13 +71,13 @@ export default function Dashboard() {
                   <AreaChart data={forecastData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6C63FF" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#6C63FF" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill: '#7070A0', fontSize: 12}} dy={10} />
                     <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(108, 99, 255, 0.5)', strokeWidth: 2, strokeDasharray: '4 4' }} />
-                    <Area type="monotone" dataKey="balance" stroke="#6C63FF" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
+                    <Area type="monotone" dataKey="balance" stroke="#8B5CF6" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
