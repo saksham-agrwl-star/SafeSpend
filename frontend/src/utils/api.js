@@ -3,7 +3,11 @@
  * All backend calls go through here.
  */
 
-const BASE_URL = '/api';
+// In production (Vercel), set VITE_API_URL=https://your-app.onrender.com in Vercel env vars.
+// In development, Vite's proxy forwards /api → localhost:5000 automatically.
+const BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api';
 
 export const getUserId = () => localStorage.getItem('safespend_user_id') || 'user123';
 export const getUserName = () => localStorage.getItem('safespend_user_name') || 'User';
