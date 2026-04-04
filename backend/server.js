@@ -21,9 +21,10 @@ app.use('/api/transactions', require('./routes/transactionRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/simulate', require('./routes/simulateRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/ai-check', require('./routes/aiRoutes'));
 
 app.get('/', (req, res) => {
-  res.send('SpendSense API is running...');
+  res.send('SafeSpend API is running...');
 });
 
 const PORT = process.env.PORT || 5000;

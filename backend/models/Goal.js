@@ -20,7 +20,7 @@ const goalSchema = new mongoose.Schema({
   },
   deadline: {
     type: Date,
-    required: true
+    required: false
   },
   status: {
     type: String,
