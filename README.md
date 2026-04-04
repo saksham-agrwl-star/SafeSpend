@@ -50,23 +50,6 @@ User → Fetch Data → Analyze → Decide → Predict → Recommend → AI Expl
 
 ---
 
-## 📂 Project Structure
-safespend/
-├── backend/
-│   ├── ai/
-│   ├── config/
-│   ├── controllers/
-│   ├── ML_models/
-│   ├── models/
-│   ├── routes/
-│   ├── services/
-│   └── utils/
-└── frontend/
-├── public/
-└── src/
-
----
-
 ## 🛠️ Setup Instructions
 
 ### 1. Clone the repo
