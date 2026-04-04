@@ -1,103 +1,114 @@
 # 💸 SafeSpend — AI-Powered Smart Spending System
 
+## 🌐 Live Demo
+👉 [https://safe-spend-henna.vercel.app/](https://safe-spend-henna.vercel.app/)
+
 SafeSpend is a real-time financial decision system that analyzes user transactions **before payment** and provides actionable insights, warnings, and recommendations to help users stay within budget and achieve their financial goals.
 
 ---
 
 ## 🚀 Features
 
-- 🔍 Real-Time Transaction Analysis  
-  - Scan QR / UPI or enter amount manually  
-  - Extract transaction details instantly  
+- 🔍 **Real-Time Transaction Analysis**
+  - Scan QR / UPI or enter amount manually
+  - Extract transaction details instantly
 
-- 🧠 Decision Engine  
-  - Evaluates risk in real time  
-  - Output: SAFE / WARNING / BLOCK  
+- 🧠 **Decision Engine**
+  - Evaluates risk in real time
+  - Output: `SAFE` / `WARNING` / `BLOCK`
 
-- 📊 Prediction System  
-  - Forecasts future balance  
-  - Detects overspending trends  
+- 📊 **Prediction System**
+  - Forecasts future balance
+  - Detects overspending trends
 
-- 💡 Recommendation Engine  
-  - Suggests:
-    - Reduce ₹X/week  
-    - Save ₹Y/week  
-  - Based on user behavior  
+- 💡 **Recommendation Engine**
+  - Suggests spending cuts and savings targets based on user behavior
 
-- 🤖 AI Explanation Layer  
-  - Converts output into human-readable warnings  
-  - Uses Groq LLM  
+- 🤖 **AI Explanation Layer**
+  - Converts output into human-readable warnings
+  - Powered by Groq LLM
 
-- 📱 User Interface  
-  - Alert popups before payment  
-  - Dashboard insights  
+- 📱 **User Interface**
+  - Alert popups before payment
+  - Dashboard insights
 
 ---
 
 ## 🧠 How It Works
-User → Process → Fetch Data → Analyze → Decide → Predict → Recommend → Explain (AI) → UI
-
+User → Fetch Data → Analyze → Decide → Predict → Recommend → AI Explain → UI
 
 ---
 
 ## ⚙️ Tech Stack
 
-Backend: Node.js, Express.js  
-Database: MongoDB  
-Frontend: React.js, Tailwind CSS  
-AI: Groq API  
+| Layer    | Technology                  |
+|----------|-----------------------------|
+| Backend  | Node.js, Express.js         |
+| Database | MongoDB                     |
+| Frontend | React.js, Tailwind CSS      |
+| AI       | Groq API                    |
 
 ---
 
 ## 📂 Project Structure
-
-### backend
-- ai
-- config
-- controllers
-- ML_models
-- models
-- routes
-- services
-- utils
-
-### frontend
-- dist
-- node_modules
-- public
-- src
+safespend/
+├── backend/
+│   ├── ai/
+│   ├── config/
+│   ├── controllers/
+│   ├── ML_models/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   └── utils/
+└── frontend/
+├── public/
+└── src/
 
 ---
 
-🛠️ Setup Instructions
-1. Clone the repo
-https://github.com/saksham-agrwl-star/SafeSpend.git
+## 🛠️ Setup Instructions
+
+### 1. Clone the repo
+```bash
+git clone https://github.com/saksham-agrwl-star/SafeSpend.git
 cd safespend
+```
 
-2. Install dependencies
+### 2. Install dependencies
+```bash
 npm install
+```
 
-3. Setup environment variables
+### 3. Setup environment variables
 
-Create a .env file:
-
+Create a `.env` file in the backend root:
+```env
 PORT=5000
 MONGO_URI=your_mongodb_uri
 GROQ_API_KEY=your_groq_api_key
+```
 
-4. Run server
+### 4. Run the server
+```bash
 npm run dev
+```
 
+---
 
-🎯 Key Design Principles
-Real-time decision making
-Rule-based logic (no heavy ML required)
-AI only for explanation, not decision
-Data-driven recommendations
-Modular architecture
+## 🎯 Key Design Principles
 
-🏆 Use Case
-Prevent impulsive spending
-Stay within budget
-Provide actionable financial advice
-Improve financial awareness
+- ⚡ Real-time decision making
+- 🔧 Rule-based logic (no heavy ML required)
+- 🤖 AI used only for explanation, not decision
+- 📈 Data-driven recommendations
+- 🧩 Modular architecture
+
+---
+
+## 🏆 Use Cases
+
+- Prevent impulsive spending
+- Stay within monthly budget
+- Get actionable financial advice
+- Improve overall financial awareness
