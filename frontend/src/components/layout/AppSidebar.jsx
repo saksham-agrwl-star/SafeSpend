@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, FlaskConical, Brain, MessageSquare, Target,
-  HelpCircle, LogOut, Zap, ChevronRight, Sun, Moon,
+  HelpCircle, LogOut, Zap, ChevronRight, Sun, Moon, Scan
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 const navItems = [
+  { label: 'Scan to Pay', icon: Scan, path: '/scan' },
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   { label: 'Simulator', icon: FlaskConical, path: '/simulator' },
   { label: 'Insights', icon: Brain, path: '/insights' },

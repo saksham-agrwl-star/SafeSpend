@@ -4,7 +4,7 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('spendsense-theme');
+    const saved = localStorage.getItem('SafeSpend-theme');
     // Default to light if no preference saved
     return saved === 'dark';
   });
@@ -12,7 +12,7 @@ export function ThemeProvider({ children }) {
   const toggle = () => {
     setIsDark((prev) => {
       const next = !prev;
-      localStorage.setItem('spendsense-theme', next ? 'dark' : 'light');
+      localStorage.setItem('SafeSpend-theme', next ? 'dark' : 'light');
       return next;
     });
   };

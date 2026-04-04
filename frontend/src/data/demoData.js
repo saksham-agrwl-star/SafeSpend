@@ -1,4 +1,4 @@
-// Pre-loaded demo data for SpendSense hackathon presentation
+// Pre-loaded demo data for SafeSpend hackathon presentation
 // Covers 3 months of realistic Indian spending patterns
 
 export const transactions = [

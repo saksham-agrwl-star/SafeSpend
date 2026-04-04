@@ -9,17 +9,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     let ctx = gsap.context(() => {
-      gsap.from(".dash-element", {
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 60%",
-        },
-        y: 40,
-        opacity: 0,
-        stagger: 0.1,
-        duration: 0.8,
-        ease: "power2.out"
-      });
+      gsap.fromTo(".dash-element",
+        { y: 40, opacity: 0 },
+        {
+          y: 0, opacity: 1,
+          stagger: 0.1, duration: 0.8, ease: "power2.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 85%",
+            once: true,
+          }
+        }
+      );
     }, sectionRef);
     return () => ctx.revert();
   }, []);
@@ -37,14 +38,14 @@ export default function Dashboard() {
   };
 
   return (
-    <section id="dashboard" className="py-24 relative" ref={sectionRef}>
+    <section id="dashboard" className="py-16 relative" ref={sectionRef}>
       <div className="section-container relative z-10 w-full mb-12">
         <h2 className="section-headline mb-4">Your Financial Twin</h2>
         <p className="body-text text-lg">Real time prediction engine that sees into your future.</p>
       </div>
 
       <div className="section-container relative z-10">
-        <div className="glass-card dash-element p-8 overflow-hidden relative">
+        <div className="skeuo-card dash-element p-8 overflow-hidden relative">
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
@@ -67,7 +68,7 @@ export default function Dashboard() {
                 <div className="absolute top-[45%] left-0 right-0 border-t border-dashed border-danger/40 z-0">
                   <span className="absolute -top-6 right-0 text-xs text-danger uppercase tracking-wider font-bold">Goal Critical Zone</span>
                 </div>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={forecastData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
