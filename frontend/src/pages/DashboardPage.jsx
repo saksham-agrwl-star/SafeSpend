@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
-import { getDashboard, getUserId } from '../utils/api';
+import { getDashboard, getUserId, updateUserBudget } from '../utils/api';
 import {
   Bell, TrendingUp, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, Shield,
   AlertTriangle, UtensilsCrossed, Car, Film, ShoppingBag, Banknote, ScanQrCode,
@@ -49,6 +49,9 @@ const buildForecastData = (monthlyBudget) => {
 export default function DashboardPage() {
   const [alertVisible, setAlertVisible] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [showBudgetForm, setShowBudgetForm] = useState(false);
+  const [budgetInputValue, setBudgetInputValue] = useState('');
+  const [updatingBudget, setUpdatingBudget] = useState(false);
   const [data, setData] = useState({
     currentBalance: 0,
     budgetLeft: 0,
@@ -58,7 +61,8 @@ export default function DashboardPage() {
     prediction: null,
     categoryLimits: { food: 5000, shopping: 3000, entertainment: 2000, transport: 2000 },
     categorySpent: { food: 0, shopping: 0, entertainment: 0, transport: 0, other: 0 },
-    monthlyBudget: 30000
+    monthlyBudget: 30000,
+    monthlyIncome: 0
   });
 
   useEffect(() => {
@@ -77,38 +81,34 @@ export default function DashboardPage() {
   }, []);
 
   const handleUpdateBudget = async () => {
-    const newBudgetStr = window.prompt("Enter your new monthly budget (₹):", data.monthlyBudget || 30000);
-    if (!newBudgetStr) return;
-    const newBudget = parseInt(newBudgetStr);
+    if (!budgetInputValue) return;
+    const newBudget = parseInt(budgetInputValue);
     if (isNaN(newBudget) || newBudget <= 0) {
       alert("Invalid amount.");
       return;
     }
-    
+    setUpdatingBudget(true);
     try {
-      const res = await fetch(`/api/users/${getUserId()}/budget`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ monthlyBudget: newBudget })
-      });
-      if (!res.ok) throw new Error("Failed to update budget");
+      await updateUserBudget(getUserId(), { monthlyBudget: newBudget });
       
-      // Update local state to reflect new budget quickly
-      setData(prev => ({
-        ...prev,
-        monthlyBudget: newBudget,
-        budgetLeft: prev.budgetLeft + (newBudget - (prev.monthlyBudget || 30000))
-      }));
+      // Re-fetch the entire dashboard context so category limits and ML updates immediately reflect
+      const json = await getDashboard(getUserId());
+      if (json.success) setData(json.data);
+      
+      setShowBudgetForm(false);
+      setBudgetInputValue('');
       alert("Budget updated successfully!");
     } catch (err) {
       alert(err.message);
+    } finally {
+      setUpdatingBudget(false);
     }
   };
 
   const getStats = () => {
     return [
-      { label: 'Estimated Balance', value: `₹${(data.currentBalance || 0).toLocaleString()}`, sub: 'Overall Funds', Icon: Wallet, color: '#8B5CF6', trend: 'up' },
-      { label: 'Monthly Spend', value: `₹${Math.max(0, (data.monthlyBudget || 0) - (data.budgetLeft || 0)).toLocaleString()}`, sub: `₹${Math.max(0, data.budgetLeft || 0).toLocaleString()} left`, Icon: CreditCard, color: '#F59E0B', trend: 'down' },
+      { label: 'Monthly Salary', value: `₹${(data.monthlyIncome || 0).toLocaleString()}`, sub: 'Fixed Income', Icon: Wallet, color: '#8B5CF6', trend: 'up' },
+      { label: 'Monthly Spend', value: `₹${((data.monthlyBudget || 0) - (data.budgetLeft || 0)).toLocaleString()}`, sub: `₹${(data.budgetLeft || 0).toLocaleString()} left`, Icon: CreditCard, color: '#F59E0B', trend: 'down' },
       { label: 'Financial Health', value: `${data.score}/100`, sub: data.score > 80 ? 'SAFE zone' : data.score > 50 ? 'CAUTION zone' : 'RISK zone', Icon: Shield, color: data.score > 50 ? '#00D4AA' : '#EF4444', trend: null },
       { label: 'Upcoming Target', value: data.goalProgress && data.goalProgress.length > 0 && data.goalProgress[0]?.targetAmount ? `₹${data.goalProgress[0].targetAmount.toLocaleString()}` : 'No Goal Set', sub: data.goalProgress && data.goalProgress.length > 0 ? data.goalProgress[0].goalName : 'Add a goal in settings', Icon: TrendingUp, color: '#00D4AA', trend: 'up' },
     ];
@@ -164,9 +164,6 @@ export default function DashboardPage() {
                 <ScanQrCode size={18} /> Scan QR 
               </button>
             </Link>
-            <div className="badge-warn" style={{ cursor: 'pointer', padding: '6px 12px' }}>
-              <Bell size={12} /> {(data.recentTransactions.filter(t => t.riskLevel === 'High').length || 0) + 1} Flags
-            </div>
           </div>
         </div>
 
@@ -256,10 +253,26 @@ export default function DashboardPage() {
           <div className="skeuo-card" style={{ padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h3 style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '0.95rem' }}>Monthly Constraints</h3>
-              <button onClick={handleUpdateBudget} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: 'var(--color-accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                <Edit2 size={12} /> Update Budget
+              <button onClick={() => { setShowBudgetForm(!showBudgetForm); setBudgetInputValue(data.monthlyBudget || ''); }} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: 'var(--color-accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                <Edit2 size={12} /> {showBudgetForm ? 'Cancel' : 'Update Budget'}
               </button>
             </div>
+            {showBudgetForm && (
+              <div style={{ padding: '12px 16px', background: 'var(--color-surface)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: 10, display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ color: 'var(--color-muted)', fontSize: '0.9rem', fontWeight: 600 }}>₹</span>
+                <input
+                  type="number"
+                  placeholder="e.g. 50000"
+                  value={budgetInputValue}
+                  onChange={(e) => setBudgetInputValue(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', fontSize: '0.9rem', flex: 1, outline: 'none', fontWeight: 600 }}
+                  autoFocus
+                />
+                <button onClick={handleUpdateBudget} disabled={updatingBudget} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: 6, height: 'auto' }}>
+                  {updatingBudget ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {categories.map((cat) => {
                 const pct = Math.min((cat.spent / cat.budget) * 100, 100);

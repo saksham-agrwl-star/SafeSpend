@@ -36,33 +36,15 @@ const PaymentScanPage = () => {
             setError(null);
             if (scanner) scanner.clear().catch(() => {});
 
-            try {
-              const userId = getUserId();
-              const json = await scanTransaction({
-                userId,
-                amount: parsedData.amount || 0,
-                merchant: parsedData.name || 'Unknown',
-                upiId: parsedData.upiId,
-                category: 'Other',
-              });
-
-              // Pass both parsed UPI data AND scan result to PaymentConfirmPage
+            // Simulate scan processing for fluid UI experience feeling
+            setTimeout(() => {
               navigate('/pay', {
                 state: {
                   upiData: parsedData,
-                  scanResult: json.data || null,
+                  scanResult: null, // Removed inaccurate pre-computed scan to match manual entry flow
                 },
               });
-            } catch (err) {
-              // Backend unreachable — still allow payment flow
-              console.warn('Scan API failed, proceeding without risk check:', err.message);
-              navigate('/pay', {
-                state: {
-                  upiData: parsedData,
-                  scanResult: null,
-                },
-              });
-            }
+            }, 800);
           },
           () => {} // error callback — ignore decode failures silently
         );

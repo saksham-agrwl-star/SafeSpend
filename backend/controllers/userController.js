@@ -138,10 +138,55 @@ exports.updateBudget = async (req, res) => {
     const user = await User.findOne({ userId });
     if (!user) return formatResponse(res, 404, 'User not found');
 
-    user.monthlyBudget = Number(monthlyBudget);
+    const oldBudget = user.monthlyBudget || 30000;
+    const newBudgetVal = Number(monthlyBudget);
+    
+    // Proportionally scale category limits to match new budget visually on the dashboard
+    if (newBudgetVal > 0 && oldBudget > 0) {
+      const ratio = newBudgetVal / oldBudget;
+      user.categoryLimits = {
+        food: Math.round((user.categoryLimits?.food || 5000) * ratio),
+        shopping: Math.round((user.categoryLimits?.shopping || 3000) * ratio),
+        entertainment: Math.round((user.categoryLimits?.entertainment || 2000) * ratio),
+        transport: Math.round((user.categoryLimits?.transport || 2000) * ratio)
+      };
+    }
+
+    user.monthlyBudget = newBudgetVal;
     await user.save();
 
     return formatResponse(res, 200, 'Budget updated', { user });
+  } catch (error) {
+    return formatResponse(res, 500, error.message);
+  }
+};
+
+exports.updateGoal = async (req, res) => {
+  try {
+    const { userId, goalId } = req.params;
+    const { goalName, targetAmount, deadline } = req.body;
+    
+    const goal = await Goal.findOne({ _id: goalId, userId });
+    if (!goal) return formatResponse(res, 404, 'Goal not found');
+
+    if (goalName) goal.goalName = goalName;
+    if (targetAmount) goal.targetAmount = Number(targetAmount);
+    if (deadline !== undefined) goal.deadline = deadline ? new Date(deadline) : undefined;
+    
+    await goal.save();
+    return formatResponse(res, 200, 'Goal updated', { goal });
+  } catch (error) {
+    return formatResponse(res, 500, error.message);
+  }
+};
+
+exports.deleteGoal = async (req, res) => {
+  try {
+    const { userId, goalId } = req.params;
+    const goal = await Goal.findOneAndDelete({ _id: goalId, userId });
+    if (!goal) return formatResponse(res, 404, 'Goal not found');
+    
+    return formatResponse(res, 200, 'Goal deleted');
   } catch (error) {
     return formatResponse(res, 500, error.message);
   }

@@ -76,8 +76,9 @@ exports.getDashboard = async (req, res) => {
     }
 
     return formatResponse(res, 200, 'Dashboard loaded', {
-      currentBalance: Math.max(0, (user.monthlyIncome || 0) - totalSpent),
-      budgetLeft: Math.max(0, (user.monthlyBudget || 0) - totalSpent),
+      currentBalance: (user.monthlyIncome || 0) - totalSpent,
+      monthlyIncome: user.monthlyIncome || 0,
+      budgetLeft: (user.monthlyBudget || 0) - totalSpent,
       monthlyBudget: user.monthlyBudget || 0,
       score: Math.max(0, score),
       recentTransactions,

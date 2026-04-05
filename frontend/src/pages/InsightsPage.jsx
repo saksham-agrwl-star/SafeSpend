@@ -112,7 +112,6 @@ export default function InsightsPage() {
             { key: 'dna',       label: 'DNA Profile',    icon: Fingerprint },
             { key: 'heatmap',   label: 'Spend Heatmap',  icon: Flame       },
             { key: 'benchmark', label: 'Peer Benchmark',  icon: Users       },
-            { key: 'pulse',     label: 'Behavior Pulse',  icon: Activity    },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -337,55 +336,7 @@ export default function InsightsPage() {
           </div>
         )}
 
-        {/* ── BEHAVIOR PULSE ─────────────────────────────────────────────── */}
-        {activeTab === 'pulse' && (
-          <div className="skeuo-card" style={{ padding: 32 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
-              <div>
-                <h3 style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '1rem', marginBottom: 4 }}>Weekly Stress vs Spend Correlation</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--color-muted)' }}>
-                  Impulse-rate proxy correlated with discretionary outflow by week.
-                </p>
-              </div>
-              <div className="badge-warn">
-                {userFlags.impulseRate > 50 ? 'High Correlation Detected' : 'Correlation Normal'}
-              </div>
-            </div>
-            {pulseData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={pulseData} barGap={8}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(108,99,255,0.06)" />
-                  <XAxis dataKey="week" tick={{ fill: 'var(--color-muted)', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="left"  tickFormatter={(v) => `${v}%`}           tick={{ fill: '#EF4444', fontSize: 11, fontWeight: 700 }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `₹${v/1000}k`} tick={{ fill: '#8B5CF6', fontSize: 11, fontWeight: 700 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend iconType="circle" />
-                  <Bar yAxisId="left"  dataKey="stress" name="Stress Index %"  fill="#EF4444" opacity={0.65} radius={[6,6,0,0]} />
-                  <Bar yAxisId="right" dataKey="spend"  name="Weekly Spend ₹"  fill="#8B5CF6" opacity={0.65} radius={[6,6,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-muted)' }}>
-                Pulse data will appear once transactions are recorded.
-              </div>
-            )}
-            <div style={{ marginTop: 28, padding: '20px 24px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 14, display: 'flex', gap: 16 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <AlertTriangle size={16} color="#EF4444" />
-              </div>
-              <p style={{ fontSize: '0.88rem', color: 'var(--color-muted)', lineHeight: 1.6, margin: 0 }}>
-                <strong style={{ color: '#EF4444' }}>AI Insight: </strong>
-                {userFlags.stress
-                  ? 'Stress spending pattern detected. The AI suggests activating '
-                  : 'No active stress spending pattern detected. '}
-                {userFlags.stress && <span style={{ color: 'var(--color-text)', fontWeight: 700 }}>ZEN MODE</span>}
-                {userFlags.stress && ' on delivery apps during high-stress periods.'}
-                {userFlags.lateNight && ' Late-night transactions are a risk driver — consider app time restrictions after 10 PM.'}
-                {!userFlags.stress && !userFlags.lateNight && ' Maintain current discipline for optimal financial health.'}
-              </p>
-            </div>
-          </div>
-        )}
+
       </main>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

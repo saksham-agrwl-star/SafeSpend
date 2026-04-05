@@ -40,7 +40,7 @@ exports.aiCheck = async (req, res) => {
       .reduce((s, tx) => s + Math.abs(tx.amount), 0);
 
     const catLimit = (user.categoryLimits || {})[cat.toLowerCase()] || (user.monthlyBudget * 0.3);
-    const budgetUsed = totalSpentThisMonth / (user.monthlyBudget || 30000);
+    const budgetUsed = (totalSpentThisMonth + parsedAmount) / (user.monthlyBudget || 30000);
 
     // ── 3. Behavior ML ───────────────────────────────────────────────────────
     const behaviorResult = analyzeBehaviorML({

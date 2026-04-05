@@ -27,7 +27,9 @@ const predictImpact = ({ monthlyBudget, monthlyIncome, totalSpentThisMonth, tran
   if (goal && goal.targetAmount > 0) {
     const savedSoFar     = goal.savedAmount || 0;
     const remaining_target = goal.targetAmount - savedSoFar;
-    const dailySavingRate = safeBudget > 0 ? Math.max(1, (safeIncome - safeBudget) / daysInMonth) : 1;
+    
+    // Enforce a realistic minimum daily savings rate (e.g., 200) so a small deficit doesn't produce thousands of days
+    const dailySavingRate = safeIncome > 0 ? Math.max(200, (safeIncome - safeBudget) / daysInMonth) : 200;
 
     if (predictedBalance < 0) {
       goalImpactDays = Math.ceil(Math.abs(predictedBalance) / dailySavingRate);
@@ -54,7 +56,7 @@ const predictImpact = ({ monthlyBudget, monthlyIncome, totalSpentThisMonth, tran
     predictedBalance:  Math.round(predictedBalance),
     budgetAfterTx:     Math.round(budgetAfterTx),
     dailyBurnRate:     Math.round(dailyBurn),
-    runwayDays:        Math.max(0, runwayDays),
+    runwayDays:        runwayDays,
     goalImpactDays:    Math.max(0, goalImpactDays),
     riskStatus,
     goalName: goal?.goalName || null,

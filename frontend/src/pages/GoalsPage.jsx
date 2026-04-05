@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
 import {
-  Plus, Target, CheckCircle2, Circle, Cpu,
+  Plus, Target, CheckCircle2, Circle, Cpu, Edit2, Trash2,
   Palmtree, Smartphone, Car, ShieldCheck, TrendingUp, Flag, Calendar
 } from 'lucide-react';
-import { getUser, createGoal, getUserId } from '../utils/api';
+import { getUser, createGoal, updateGoal, deleteGoal, getUserId } from '../utils/api';
 
 
 const ICON_MAP = { Palmtree, Smartphone, Car, ShieldCheck, Target };
@@ -15,18 +15,28 @@ function daysUntil(deadline) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
-function GoalCard({ goal }) {
+function GoalCard({ goal, onUpdate, onDelete, updatingId }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTarget, setEditTarget] = useState(goal.target);
   const pct = Math.min((goal.current / goal.target) * 100, 100);
   const isComplete = goal.status === 'completed';
   const Icon = goal.icon || Target;
 
+  const handleSave = async () => {
+    if (!editTarget) return;
+    await onUpdate(goal.id, editTarget);
+    setIsEditing(false);
+  };
+
   return (
     <div className="skeuo-card" style={{ borderColor: isComplete ? 'rgba(0,212,170,0.25)' : `${goal.color}20`, position: 'relative', overflow: 'hidden', padding: 24 }}>
-      {isComplete && (
-        <div style={{ position: 'absolute', top: 16, right: 16 }}>
-          <CheckCircle2 size={20} color="#00D4AA" />
-        </div>
-      )}
+      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button onClick={() => { setIsEditing(!isEditing); setEditTarget(goal.target); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-muted)', padding: 4 }}>
+          {isEditing ? <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Cancel</span> : <Edit2 size={16} />}
+        </button>
+        <button onClick={() => onDelete(goal.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#EF4444', padding: 4 }}><Trash2 size={16} /></button>
+        {isComplete && <CheckCircle2 size={20} color="#00D4AA" />}
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 20 }}>
         <div style={{ width: 48, height: 48, borderRadius: 12, background: `${goal.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -50,6 +60,22 @@ function GoalCard({ goal }) {
           </div>
         </div>
       </div>
+
+      {isEditing && (
+        <div style={{ padding: '12px 16px', background: 'var(--color-surface)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: 10, display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20 }}>
+          <span style={{ color: 'var(--color-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Target: ₹</span>
+          <input
+            type="number"
+            value={editTarget}
+            onChange={(e) => setEditTarget(e.target.value)}
+            style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', fontSize: '0.9rem', flex: 1, outline: 'none', fontWeight: 600 }}
+            autoFocus
+          />
+          <button onClick={handleSave} disabled={updatingId === goal.id} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: 6, height: 'auto' }}>
+            {updatingId === goal.id ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'center', marginBottom: 20 }}>
         <div style={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
@@ -99,6 +125,7 @@ export default function GoalsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newGoal, setNewGoal] = useState({ name: '', target: '', deadline: '' });
   const [saving, setSaving] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     const userId = getUserId();
@@ -165,6 +192,32 @@ export default function GoalsPage() {
       setSaving(false);
       setNewGoal({ name: '', target: '', deadline: '' });
       setShowAddForm(false);
+    }
+  };
+
+  const handleUpdate = async (id, newTargetValue) => {
+    const newTarget = parseInt(newTargetValue);
+    if (isNaN(newTarget) || newTarget <= 0) return alert("Invalid amount.");
+    
+    setUpdatingId(id);
+    try {
+      await updateGoal(getUserId(), id, { targetAmount: newTarget });
+      setGoals(prev => prev.map(g => g.id === id ? { ...g, target: newTarget, status: g.current >= newTarget ? 'completed' : 'active' } : g));
+    } catch (e) {
+      alert("Failed to update goal.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this goal?")) return;
+    try {
+      await deleteGoal(getUserId(), id);
+      setGoals(prev => prev.filter(g => g.id !== id));
+      alert("Goal deleted.");
+    } catch (e) {
+      alert("Failed to delete goal.");
     }
   };
 
@@ -246,7 +299,7 @@ export default function GoalsPage() {
                 <p style={{ color: 'var(--color-muted)', fontSize: '0.9rem' }}>Click "New Goal" to set your first financial target. The AI will track your progress automatically.</p>
               </div>
             )}
-            {goals.length > 0 && goals.map((goal) => <GoalCard key={goal.id} goal={goal} />)}
+            {goals.length > 0 && goals.map((goal) => <GoalCard key={goal.id} goal={goal} onUpdate={handleUpdate} onDelete={handleDelete} updatingId={updatingId} />)}
             </div>
           </>
         )}

@@ -26,10 +26,10 @@ const simulateTransaction = (data) => {
     const runwayDays = Math.floor(currentBalance / newDailyRate);
 
     return {
-        predictedBalance: Math.max(0, Math.round(predictedBalance)),
+        predictedBalance: Math.round(predictedBalance),
         after: {
             goalStatus,
-            runwayDays: Math.max(0, runwayDays),
+            runwayDays: Math.round(runwayDays),
             dailySpend: Math.round(newDailyRate)
         }
     };

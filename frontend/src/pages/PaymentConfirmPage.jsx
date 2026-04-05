@@ -52,6 +52,7 @@ const PaymentConfirmPage = () => {
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [showMLForm, setShowMLForm]           = useState(false);
   const [autoCountdown, setAutoCountdown]     = useState(null);
+  const [isOverridden, setIsOverridden]       = useState(false);
   const [mlContext, setMlContext] = useState({ category: 'Food', isEmergency: false, isSubscription: false });
 
   useEffect(() => { if (!upiData) navigate('/scan'); }, [upiData, navigate]);
@@ -98,7 +99,7 @@ const PaymentConfirmPage = () => {
     }
   };
 
-  const saveAndRedirect = async (riskLevel, wasBlocked) => {
+  const saveAndRedirect = async (riskLevel, wasBlocked, keepOnPage = false) => {
     try {
       await addTransaction({
         userId:        getUserId(),
@@ -115,16 +116,36 @@ const PaymentConfirmPage = () => {
       });
     } catch (e) { console.warn('Failed to log transaction', e); }
 
+    if (keepOnPage) {
+      setIsOverridden(true);
+      return;
+    }
+
     if (!wasBlocked) {
-      const upiUrl = `upi://pay?pa=${upiData.upiId}&pn=${encodeURIComponent(upiData.name || '')}&am=${amount}&cu=INR`;
-      window.location.href = upiUrl;
+      if (isManual) {
+        navigate('/dashboard');
+      } else {
+        const upiUrl = `upi://pay?pa=${upiData.upiId}&pn=${encodeURIComponent(upiData.name || '')}&am=${amount}&cu=INR`;
+        window.location.href = upiUrl;
+        setIsOverridden(true);
+      }
     } else {
       navigate('/dashboard');
     }
   };
 
-  const budgetBar = scanResult
-    ? Math.min(100, Math.round((scanResult.totalSpentThisMonth / (scanResult.monthlyBudget || 30000)) * 100))
+  const inputAmount = parseFloat(amount) || 0;
+  const dynamicScanResult = scanResult ? {
+    ...scanResult,
+    budgetUsedPct: Math.round(((scanResult.totalSpentThisMonth + inputAmount) / (scanResult.monthlyBudget || 30000)) * 100),
+    predictedBalance: (scanResult.predictedBalance || 0) - inputAmount,
+    totalSpentThisMonth: scanResult.totalSpentThisMonth + inputAmount,
+    // rough approximation for runway days change
+    runwayDays: (scanResult.runwayDays || 0) - (inputAmount > 0 ? Math.floor(inputAmount / 1000) : 0)
+  } : null;
+
+  const budgetBar = dynamicScanResult
+    ? Math.min(100, dynamicScanResult.budgetUsedPct)
     : riskAssessment?.financials
     ? Math.min(100, riskAssessment.financials.budgetUsedPct)
     : 0;
@@ -203,7 +224,7 @@ const PaymentConfirmPage = () => {
             </div>
 
             {/* Pre-scan AI context from scanTransaction */}
-            {scanResult && !riskAssessment && (
+            {dynamicScanResult && !riskAssessment && (
               <div style={{
                 background: 'rgba(108,99,255,0.06)', border: '1px solid rgba(108,99,255,0.15)',
                 borderRadius: 14, padding: '16px 20px', marginBottom: 20,
@@ -211,19 +232,19 @@ const PaymentConfirmPage = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                   <BrainCircuit size={16} color="var(--color-accent)" />
                   <span style={{ fontSize: '0.72rem', color: 'var(--color-accent)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    AI Pre-Scan Analysis
+                    Live AI Preview
                   </span>
-                  <span style={{ marginLeft: 'auto', padding: '2px 8px', borderRadius: 10, fontSize: '0.65rem', fontWeight: 800, background: `${(RISK_CONFIG[scanResult.initialRisk] || RISK_CONFIG.SAFE).color}20`, color: (RISK_CONFIG[scanResult.initialRisk] || RISK_CONFIG.SAFE).color }}>
-                    {scanResult.initialRisk || 'SCANNING'}
+                  <span style={{ marginLeft: 'auto', padding: '2px 8px', borderRadius: 10, fontSize: '0.65rem', fontWeight: 800, background: `${(RISK_CONFIG[dynamicScanResult.initialRisk] || RISK_CONFIG.SAFE).color}20`, color: (RISK_CONFIG[dynamicScanResult.initialRisk] || RISK_CONFIG.SAFE).color }}>
+                    {dynamicScanResult.initialRisk || 'SCANNING'}
                   </span>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
                   {[
-                    { icon: Wallet,      label: 'Budget Used', value: `${scanResult.budgetUsedPct || 0}%`,  color: scanResult.budgetUsedPct > 85 ? '#EF4444' : scanResult.budgetUsedPct > 65 ? '#F59E0B' : '#00D4AA' },
-                    { icon: TrendingDown, label: 'Post-Pay Balance', value: `₹${Math.max(0, scanResult.predictedBalance || 0).toLocaleString()}`, color: (scanResult.predictedBalance || 0) < 5000 ? '#EF4444' : 'var(--color-text)' },
-                    { icon: Target, label: 'Goal Delay', value: scanResult.goalImpactDays > 0 ? `+${scanResult.goalImpactDays}d` : 'Safe', color: scanResult.goalImpactDays > 0 ? '#F59E0B' : '#00D4AA' },
-                    { icon: Activity, label: 'Runway',          value: `${scanResult.runwayDays || 0}d`,   color: (scanResult.runwayDays || 0) < 5 ? '#EF4444' : 'var(--color-text)' },
+                    { icon: Wallet,      label: 'Budget Used', value: `${dynamicScanResult.budgetUsedPct || 0}%`,  color: dynamicScanResult.budgetUsedPct > 85 ? '#EF4444' : dynamicScanResult.budgetUsedPct > 65 ? '#F59E0B' : '#00D4AA' },
+                    { icon: TrendingDown, label: 'Post-Pay Balance', value: `₹${(dynamicScanResult.predictedBalance || 0).toLocaleString()}`, color: (dynamicScanResult.predictedBalance || 0) < 5000 ? '#EF4444' : 'var(--color-text)' },
+                    { icon: Target, label: 'Goal Delay', value: dynamicScanResult.goalImpactDays > 0 ? `+${dynamicScanResult.goalImpactDays}d` : 'Safe', color: dynamicScanResult.goalImpactDays > 0 ? '#F59E0B' : '#00D4AA' },
+                    { icon: Activity, label: 'Runway',          value: `${dynamicScanResult.runwayDays || 0}d`,   color: (dynamicScanResult.runwayDays || 0) < 5 ? '#EF4444' : 'var(--color-text)' },
                   ].map(({ icon: Icon, label, value, color }) => (
                     <div key={label} style={{ background: 'rgba(108,99,255,0.05)', borderRadius: 10, padding: '10px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
@@ -239,7 +260,7 @@ const PaymentConfirmPage = () => {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--color-muted)', marginBottom: 4 }}>
                     <span>Monthly Budget</span>
-                    <span>₹{(scanResult.totalSpentThisMonth || 0).toLocaleString()} / ₹{(scanResult.monthlyBudget || 0).toLocaleString()}</span>
+                    <span>₹{(dynamicScanResult.totalSpentThisMonth || 0).toLocaleString()} / ₹{(dynamicScanResult.monthlyBudget || 0).toLocaleString()}</span>
                   </div>
                   <div style={{ height: 5, borderRadius: 3, background: 'rgba(108,99,255,0.1)', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${budgetBar}%`, borderRadius: 3, background: budgetBar > 85 ? '#EF4444' : budgetBar > 65 ? '#F59E0B' : '#00D4AA', transition: 'width 0.8s ease' }} />
@@ -284,8 +305,12 @@ const PaymentConfirmPage = () => {
                     <FinancialRow label="Budget after payment"  value={`₹${(riskAssessment.financials.budgetAfterTx || 0).toLocaleString()}`}  color={riskAssessment.financials.budgetAfterTx < 5000 ? '#EF4444' : null} />
                     <FinancialRow label="Daily burn rate"       value={`₹${(riskAssessment.financials.dailyBurnRate || 0).toLocaleString()}/day`} />
                     <FinancialRow label="Budget runway"         value={`${riskAssessment.financials.runwayDays || 0} days left`} color={riskAssessment.financials.runwayDays < 5 ? '#EF4444' : null} />
-                    {riskAssessment.financials.goalImpactDays > 0 && (
-                      <FinancialRow label={`${riskAssessment.financials.goalName || 'Goal'} delay`} value={`+${riskAssessment.financials.goalImpactDays} days`} color="#F59E0B" />
+                    {riskAssessment.financials.goalImpactDays !== undefined && (
+                      <FinancialRow 
+                        label={`${riskAssessment.financials.goalName || 'Goal'} delay`} 
+                        value={riskAssessment.financials.goalImpactDays > 0 ? `+${riskAssessment.financials.goalImpactDays} days` : 'No delay'} 
+                        color={riskAssessment.financials.goalImpactDays > 0 ? '#F59E0B' : '#00D4AA'} 
+                      />
                     )}
                     <FinancialRow label="Month budget used"    value={`${riskAssessment.financials.budgetUsedPct || 0}%`} color={riskAssessment.financials.budgetUsedPct > 85 ? '#EF4444' : null} />
                   </div>
@@ -294,27 +319,45 @@ const PaymentConfirmPage = () => {
             )}
 
             {/* CTA Button */}
-            <button
-              onClick={() => setShowMLForm(true)}
-              disabled={loading || showConfirmPopup || !amount || parseFloat(amount) <= 0 || showMLForm || autoCountdown > 0}
-              style={{
-                width: '100%', padding: '16px 20px', borderRadius: 14,
-                border: 'none', cursor: (!amount || loading || showMLForm || autoCountdown > 0) ? 'not-allowed' : 'pointer',
-                background: (!amount || parseFloat(amount) <= 0 || loading || showMLForm || autoCountdown > 0)
-                  ? 'var(--color-surface2)' : 'var(--color-accent)',
-                color: (!amount || parseFloat(amount) <= 0) ? 'var(--color-muted)' : 'white',
-                fontWeight: 800, fontSize: '0.95rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: amount && !loading ? '0 8px 24px rgba(139,92,246,0.3)' : 'none',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {loading ? (
-                <><div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid white', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} /> AI Evaluating...</>
-              ) : (
-                <><BrainCircuit size={18} /> Analyse & Pay <ArrowRight size={16} /></>
-              )}
-            </button>
+            {isOverridden ? (
+              <button
+                onClick={() => navigate('/dashboard')}
+                style={{
+                  width: '100%', padding: '16px 20px', borderRadius: 14,
+                  border: 'none', cursor: 'pointer',
+                  background: 'var(--color-accent)',
+                  color: 'white',
+                  fontWeight: 800, fontSize: '0.95rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: '0 8px 24px rgba(139,92,246,0.3)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <ChevronRight size={18} /> Return to Dashboard
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowMLForm(true)}
+                disabled={loading || showConfirmPopup || !amount || parseFloat(amount) <= 0 || showMLForm || autoCountdown > 0}
+                style={{
+                  width: '100%', padding: '16px 20px', borderRadius: 14,
+                  border: 'none', cursor: (!amount || loading || showMLForm || autoCountdown > 0) ? 'not-allowed' : 'pointer',
+                  background: (!amount || parseFloat(amount) <= 0 || loading || showMLForm || autoCountdown > 0)
+                    ? 'var(--color-surface2)' : 'var(--color-accent)',
+                  color: (!amount || parseFloat(amount) <= 0) ? 'var(--color-muted)' : 'white',
+                  fontWeight: 800, fontSize: '0.95rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: amount && !loading ? '0 8px 24px rgba(139,92,246,0.3)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {loading ? (
+                  <><div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid white', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} /> AI Evaluating...</>
+                ) : (
+                  <><BrainCircuit size={18} /> {isManual ? 'Analyse & Go to Dashboard' : 'Analyse & Pay'} <ArrowRight size={16} /></>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </main>
@@ -426,7 +469,7 @@ const PaymentConfirmPage = () => {
                 Protect My Goal
               </button>
               <button
-                onClick={() => { setShowConfirmPopup(false); saveAndRedirect('HIGH', false); }}
+                onClick={() => { setShowConfirmPopup(false); saveAndRedirect('HIGH', false, true); }}
                 style={{ padding: '12px 20px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', background: 'transparent', color: '#EF4444', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
                 <XCircle size={15} /> Override — Accept Risk & Pay

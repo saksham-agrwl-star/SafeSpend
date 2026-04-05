@@ -6,8 +6,8 @@ const simulateTransaction = require('../ML_models/simulationEngine');
 
 exports.simulateTransaction = async (req, res) => {
   try {
-    const { userId, swiggy, shopping, coffee } = req.body;
-    const simulatedAmount = (swiggy || 0) + (shopping || 0) + (coffee || 0);
+    const { userId, food, entertainment, shopping, bills, transport, medical } = req.body;
+    const simulatedAmount = (food || 0) + (entertainment || 0) + (shopping || 0) + (bills || 0) + (transport || 0) + (medical || 0);
     
     const user = await User.findOne({ userId });
     if (!user) return formatResponse(res, 404, 'User not found');
@@ -19,7 +19,7 @@ exports.simulateTransaction = async (req, res) => {
     const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const monthlyTxns = await Transaction.find({ userId, date: { $gte: firstDay } });
     
-    const totalSpent = monthlyTxns.reduce((acc, curr) => acc + (curr.amount > 0 ? curr.amount : 0), 0);
+    const totalSpent = monthlyTxns.reduce((acc, curr) => acc + (curr.amount < 0 ? Math.abs(curr.amount) : 0), 0);
     const currentBalance = user.monthlyIncome - totalSpent;
 
     const daysPassed = Math.max(currentDate.getDate(), 1); 
@@ -39,43 +39,38 @@ exports.simulateTransaction = async (req, res) => {
     // Run Engine
     const result = simulateTransaction(simData);
 
-    // 🔹 MOCK 15 DAYS HISTORY (Using current avg for realistic trend)
-    const history = [];
-    const avgDailySpend = (totalSpent / daysPassed) || 1200;
-    let histBalance = user.monthlyIncome - (totalSpent - (avgDailySpend * 15)); // Approximation
-
-    for (let i = 15; i >= 1; i--) {
-        const dayNum = Math.max(1, daysPassed - i);
-        // Add random variance for realistic UI
-        const variance = (Math.random() - 0.5) * 400; 
-        histBalance -= (avgDailySpend + variance);
-        history.push({
-            day: `D${dayNum}`,
-            balance: Math.max(0, Math.round(histBalance)),
-            isHistory: true
-        });
-    }
-
-    // 🔹 PROJECT NEXT 15 DAYS
+    // 🔹 PROJECT NEXT 30 DAYS
     const projection = [];
     let rollingBalance = currentBalance;
     const projectedDailySpend = result.after.dailySpend;
 
-    for (let i = 1; i <= 15; i++) {
+    for (let i = 1; i <= 30; i++) {
         rollingBalance -= projectedDailySpend;
         projection.push({
             day: `D${daysPassed + i}`,
-            balance: Math.max(Math.round(rollingBalance), 0),
+            balance: Math.round(rollingBalance),
             isProjected: true
         });
     }
 
-    const cashflow = [...history, ...projection];
+    const cashflow = projection;
+
+    // Calculate effective goal impact
+    const safeIncome = user.monthlyIncome || 0;
+    const safeBudget = user.monthlyBudget || 30000;
+    const dailySavingRate = safeIncome > 0 ? Math.max(200, (safeIncome - safeBudget) / 30) : 200;
+    
+    let calculatedGoalImpact = 0;
+    if (result.after.goalStatus === "DELAYED") {
+        calculatedGoalImpact = Math.max(1, Math.ceil(Math.abs(goalAmount - result.predictedBalance) / dailySavingRate));
+    } else {
+        calculatedGoalImpact = -Math.max(1, Math.ceil(Math.abs(result.predictedBalance - goalAmount) / dailySavingRate));
+    }
 
     // Map output to frontend expectations
     return formatResponse(res, 200, 'Simulation successful', {
       newFutureBalance: result.predictedBalance,
-      goalImpact: result.after.goalStatus === "DELAYED" ? 14 : -5, 
+      goalImpact: calculatedGoalImpact, 
       riskStatus: result.after.goalStatus === "DELAYED" ? "HIGH" : 
                   result.after.runwayDays < 15 ? "CAUTION" : "SAFE",
       totalDiscretionary: simulatedAmount,

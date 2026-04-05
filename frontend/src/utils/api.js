@@ -34,6 +34,22 @@ export async function apiPost(path, body) {
   return handleResponse(res);
 }
 
+export async function apiPut(path, body) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return handleResponse(res);
+}
+
+export async function apiDelete(path) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'DELETE',
+  });
+  return handleResponse(res);
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────
 export const loginUser = (email) => apiPost('/users/login', { email });
 export const setupUser = (data) => apiPost('/users/setup', data);
@@ -46,6 +62,9 @@ export const getRecommendations = (userId) => apiGet(`/dashboard/${userId}/recom
 // ── Goals ─────────────────────────────────────────────────────────────────
 export const getUser = (userId) => apiGet(`/users/${userId}`);
 export const createGoal = (data) => apiPost('/users/goals', data);
+export const updateGoal = (userId, goalId, data) => apiPut(`/users/${userId}/goals/${goalId}`, data);
+export const deleteGoal = (userId, goalId) => apiDelete(`/users/${userId}/goals/${goalId}`);
+export const updateUserBudget = (userId, data) => apiPut(`/users/${userId}/budget`, data);
 
 // ── Simulate ──────────────────────────────────────────────────────────────
 export const simulate = (data) => apiPost('/simulate', data);

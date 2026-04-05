@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/layout/Navbar';
 import { Cpu, PlayCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -16,14 +16,12 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const params = [
-  { key: 'swiggy',   label: 'Food & Swiggy',     min: 500, max: 8000, step: 100, default: 3000 },
-  { key: 'shopping', label: 'Shopping Budget',    min: 500, max: 8000, step: 100, default: 2500 },
-  { key: 'coffee',   label: 'Coffee & Leisure',   min: 200, max: 4000, step: 100, default: 1500 },
-];
+// params are now dynamically generated in fetchUser based on user dashboard
 
 export default function SimulatorPage() {
-  const [vals, setVals] = useState({ swiggy: 3000, shopping: 2500, coffee: 1500 });
+  const [vals, setVals] = useState(null);
+  const [baseVals, setBaseVals] = useState(null);
+  const [dynamicParams, setDynamicParams] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [cashflow, setCashflow] = useState([]);
   const [simResult, setSimResult] = useState(null);
@@ -35,23 +33,56 @@ export default function SimulatorPage() {
         const json = await getDashboard(getUserId());
         if (json.success && json.data) {
           // Extract user-like fields from dashboard data
+          const monthlyBudget = json.data.monthlyBudget || 65000;
           setUser({
-            monthlyIncome: json.data.currentBalance + Math.max(0, (json.data.monthlyBudget || 0) - (json.data.budgetLeft || 0)),
+            monthlyIncome: json.data.currentBalance + (monthlyBudget - (json.data.budgetLeft || 0)),
             goalName: json.data.goalProgress?.[0]?.goalName || null,
-            monthlyBudget: json.data.monthlyBudget,
+            monthlyBudget: monthlyBudget,
+            categoryLimits: json.data.categoryLimits,
+            categorySpent: json.data.categorySpent
           });
+          
+          // Generate Params dynamically based on the ML limits the user has
+          const limits = json.data.categoryLimits || {};
+          const spent = json.data.categorySpent || {};
+          
+          const newParams = Object.keys(limits).map(key => {
+            // Cap maximum to 0.4x (40%) the total monthly budget to avoid large unrealistic ranges
+            const categoryMaxLimit = Math.min((limits[key] || 2000) * 2, monthlyBudget * 0.4);
+            return {
+              key,
+              label: key.charAt(0).toUpperCase() + key.slice(1),
+              min: spent[key] || 0,
+              max: Math.max((spent[key] || 0) + 1000, categoryMaxLimit),
+              step: 100,
+              default: spent[key] || 0
+            };
+          });
+          
+          const newVals = {};
+          newParams.forEach(p => newVals[p.key] = p.default);
+          
+          setDynamicParams(newParams);
+          setBaseVals(newVals);
+          setVals(newVals);
         }
       } catch (e) {
         console.error("Failed to load user context", e);
       }
     };
     fetchUser();
-    // Run initial simulation with defaults
-    runSimulation();
+    // Simulation runs automatically via the effect below
   }, []);
 
-  const total = vals.swiggy + vals.shopping + vals.coffee;
-  // Dynamic display factors from the 15-day History + 15-day Projection results
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      runSimulation();
+    }, 400); // 400ms debounce for smoother real-time updating without spamming the backend
+    return () => clearTimeout(handler);
+  }, [vals]);
+
+  const total = vals ? Object.values(vals).reduce((a, b) => a + b, 0) : 0;
+  // Dynamic display factors from the 30-day Projection results
   const displayBalance = simResult ? simResult.newFutureBalance : (user?.monthlyIncome || 65000) - total - (15 * 1200);
   const displayGoalImpact = simResult ? simResult.goalImpact : 0;
   const riskLevel = simResult ? simResult.riskStatus : (total > 9000 ? 'HIGH' : total > 6000 ? 'CAUTION' : 'SAFE');
@@ -65,6 +96,7 @@ export default function SimulatorPage() {
     setIsRunning(true);
     const userId = getUserId();
     try {
+      if (!vals) return;
       const json = await simulate({ userId, ...vals });
       if (json.success) {
         setSimResult(json.data);
@@ -77,6 +109,10 @@ export default function SimulatorPage() {
     }
   };
 
+  const handleReset = () => {
+    if (baseVals) setVals(baseVals);
+  };
+
   return (
     <div className="app-layout">
       <Navbar />
@@ -85,7 +121,7 @@ export default function SimulatorPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
           <div>
             <h1 style={{ fontWeight: 800, fontSize: '1.6rem', color: 'var(--color-text)', letterSpacing: '-0.02em' }}>What-If Simulator</h1>
-            <p style={{ color: 'var(--color-muted)', fontSize: '0.85rem', marginTop: 2 }}>30-Day Analysis: 15-Day History + 15-Day Neural Projection</p>
+            <p style={{ color: 'var(--color-muted)', fontSize: '0.85rem', marginTop: 2 }}>30-Day Analysis: Forward Neural Projection</p>
           </div>
           <div className="badge-safe"><Cpu size={13} /> Engine Online</div>
         </div>
@@ -96,7 +132,7 @@ export default function SimulatorPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div className="skeuo-card" style={{ padding: 24 }}>
               <h3 style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '0.95rem', marginBottom: 24 }}>Expense Parameters</h3>
-              {params.map(p => (
+              {dynamicParams.map(p => (
                 <div key={p.key} style={{ marginBottom: 24 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <label style={{ fontSize: '0.85rem', color: 'var(--color-muted)', fontWeight: 600 }}>{p.label}</label>
@@ -110,9 +146,27 @@ export default function SimulatorPage() {
                   </div>
                 </div>
               ))}
-              <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={runSimulation} disabled={isRunning}>
-                <PlayCircle size={17} /> {isRunning ? 'Simulating...' : 'Run Simulation'}
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={runSimulation} disabled={isRunning}>
+                  <PlayCircle size={17} /> {isRunning ? 'Simulating...' : 'Run Simulation'}
+                </button>
+                <button style={{ 
+                  background: 'rgba(108,99,255,0.1)', 
+                  border: '1px solid rgba(108,99,255,0.2)', 
+                  color: 'var(--color-accent)', 
+                  padding: '0 16px', 
+                  borderRadius: 12, 
+                  fontWeight: 600, 
+                  cursor: 'pointer',
+                  transition: 'background 0.2s' 
+                }} 
+                onClick={handleReset}
+                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(108,99,255,0.2)'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(108,99,255,0.1)'}
+                >
+                  Reset
+                </button>
+              </div>
             </div>
 
             <div className="skeuo-card" style={{ padding: 20, borderColor: `${riskColor}30` }}>
@@ -128,7 +182,7 @@ export default function SimulatorPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
               {[
-                { label: 'Projected Balance', value: `₹${Math.max(0,displayBalance).toLocaleString()}`, sub: 'End of 30-day window', color: displayBalance < 10000 ? '#EF4444' : '#00D4AA' },
+                { label: 'Projected Balance', value: `₹${displayBalance.toLocaleString()}`, sub: 'End of 30-day window', color: displayBalance < 10000 ? '#EF4444' : '#00D4AA' },
                 { label: 'Target Month', value: (() => { const d = new Date(); d.setMonth(d.getMonth()+1); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + String(d.getFullYear()).slice(2); })(), sub: 'AI Projection', color: '#8B5CF6' },
                 { label: `${activeGoalName} Impact`, value: displayGoalImpact > 0 ? `+${Math.round(displayGoalImpact)}d` : `${Math.round(displayGoalImpact)}d`, sub: displayGoalImpact > 0 ? 'Delay detected' : 'Time saved', color: displayGoalImpact > 0 ? '#F59E0B' : '#00D4AA' },
               ].map(kpi => (
@@ -149,7 +203,7 @@ export default function SimulatorPage() {
                 <LineChart data={cashflow}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(108,99,255,0.08)" />
                   <XAxis dataKey="day" tick={{ fill: 'var(--color-muted)', fontSize: 10 }} axisLine={false} tickLine={false} interval={4} />
-                  <YAxis tick={{ fill: 'var(--color-muted)', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${Math.round(v/1000)}k`} />
+                  <YAxis domain={['auto', 'auto']} tick={{ fill: 'var(--color-muted)', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${Math.round(v/1000)}k`} />
                   <Tooltip content={<CustomTooltip />} />
                   <ReferenceLine x={`D${new Date().getDate()}`} stroke="var(--color-accent)" strokeDasharray="3 3" label={{ position: 'top', value: 'Today', fill: 'var(--color-accent)', fontSize: 10, fontWeight: 'bold' }} />
                   <ReferenceLine y={10000} stroke="#EF4444" strokeDasharray="4 4" label={{ value: 'Danger Zone', fill: '#EF4444', fontSize: 10 }} />
