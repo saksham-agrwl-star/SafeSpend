@@ -147,14 +147,12 @@ export default function SimulatorPage() {
                 </div>
               ))}
               <div style={{ display: 'flex', gap: 10 }}>
-                <button className="btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={runSimulation} disabled={isRunning}>
-                  <PlayCircle size={17} /> {isRunning ? 'Simulating...' : 'Run Simulation'}
-                </button>
                 <button style={{ 
+                  flex: 1,
                   background: 'rgba(108,99,255,0.1)', 
                   border: '1px solid rgba(108,99,255,0.2)', 
                   color: 'var(--color-accent)', 
-                  padding: '0 16px', 
+                  padding: '12px 16px', 
                   borderRadius: 12, 
                   fontWeight: 600, 
                   cursor: 'pointer',
@@ -164,7 +162,7 @@ export default function SimulatorPage() {
                 onMouseOver={(e) => e.currentTarget.style.background = 'rgba(108,99,255,0.2)'}
                 onMouseOut={(e) => e.currentTarget.style.background = 'rgba(108,99,255,0.1)'}
                 >
-                  Reset
+                  Reset Parameters
                 </button>
               </div>
             </div>
@@ -219,11 +217,11 @@ export default function SimulatorPage() {
               <div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--color-accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>AI Neural Analysis</div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--color-muted)', lineHeight: 1.6 }}>
-                  Based on your last 15 days of spending, {riskLevel === 'HIGH'
-                    ? `you are trending ₹${(total - 7000).toLocaleString()} above budget. Reduction recommended to avoid Day 18 insolvency.`
+                  {riskLevel === 'HIGH'
+                    ? `Analysis complete. This purchase will critically delay your ${activeGoalName} by ${Math.abs(displayGoalImpact)} days. At your newly extrapolated spending rate, you will hit complete insolvency (zero balance) in just ${simResult?.runwayDays || 18} days.`
                     : riskLevel === 'CAUTION'
-                    ? `you are within manageable range, but careful allocation is needed to hit your ${activeGoalName}.`
-                    : `your current trajectory is excellent! You are projected to hit your ${activeGoalName} ahead of schedule.`}
+                    ? `You are within manageable ranges, but this purchase drops your runway to ${simResult?.runwayDays || 25} days. Careful daily allocation is required to safely hit your ${activeGoalName}.`
+                    : `Your trajectory is excellent. Even with this expenditure, your runway remains robust at ${simResult?.runwayDays || 35}+ days and you remain perfectly on-track for your ${activeGoalName}!`}
                 </p>
               </div>
             </div>

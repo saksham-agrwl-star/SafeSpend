@@ -21,10 +21,21 @@ exports.getInsights = async (req, res) => {
     };
 
     let lateNightCount = 0, weekendCount = 0, foodCount = 0, totalTxCount = transactions.length;
+    let oldestDate = new Date();
+    
+    // Using monthly budget to find daily budget
+    const dailyBudget = (user.monthlyBudget || 30000) / 30;
 
     transactions.forEach(tx => {
       if (tx.amount >= 0) return; // skip income
-      const date = new Date(tx.date);
+      
+      const txDateUTC = new Date(tx.date);
+      if (txDateUTC < oldestDate) oldestDate = txDateUTC;
+      
+      // Convert to IST as requested
+      const istDateStr = txDateUTC.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+      const date = new Date(istDateStr);
+      
       const dayIdx = date.getDay();
       const hour = date.getHours();
       const amt = Math.abs(tx.amount);
@@ -44,19 +55,22 @@ exports.getInsights = async (req, res) => {
       else if (hour < 23) bucket = '9pm';
       else                bucket = '11pm';
 
-      // Accumulate intensity (capped at 100)
-      hourBuckets[bucket][dayIdx] = Math.min(100, hourBuckets[bucket][dayIdx] + Math.round(amt / 100));
+      // Accumulate raw amount for the specific slot
+      hourBuckets[bucket][dayIdx] += amt;
     });
+
+    const weeksPassed = Math.max(1, Math.ceil((new Date() - oldestDate) / (1000 * 60 * 60 * 24 * 7)));
+    const getIntensity = (val) => Math.min(100, Math.round(((val / weeksPassed) / dailyBudget) * 100));
 
     const heatmapData = Object.keys(hourBuckets).map(hour => ({
       hour,
-      Mon: Math.round(hourBuckets[hour][1]),
-      Tue: Math.round(hourBuckets[hour][2]),
-      Wed: Math.round(hourBuckets[hour][3]),
-      Thu: Math.round(hourBuckets[hour][4]),
-      Fri: Math.round(hourBuckets[hour][5]),
-      Sat: Math.round(hourBuckets[hour][6]),
-      Sun: Math.round(hourBuckets[hour][0]),
+      Mon: getIntensity(hourBuckets[hour][1]),
+      Tue: getIntensity(hourBuckets[hour][2]),
+      Wed: getIntensity(hourBuckets[hour][3]),
+      Thu: getIntensity(hourBuckets[hour][4]),
+      Fri: getIntensity(hourBuckets[hour][5]),
+      Sat: getIntensity(hourBuckets[hour][6]),
+      Sun: getIntensity(hourBuckets[hour][0]),
     }));
 
     // ── 2. PERSONALITY RADAR: from impulseFlags + spendingStyle + profile ──
